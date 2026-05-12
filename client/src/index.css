@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet fix — must have explicit height */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
+
+/* Custom pin icon */
+.entry-pin svg {
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+}
+
+/* Popup content */
+.entry-popup img {
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+/* Sidebar scroll */
+.sidebar-entries {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Utility button classes */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded transition-colors;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded transition-colors;
+  }
+  .btn-danger-sm {
+    @apply bg-red-100 hover:bg-red-200 text-red-700 text-xs px-2 py-1 rounded transition-colors;
+  }
+  .btn-secondary-sm {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded transition-colors;
+  }
+  .input {
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+}
