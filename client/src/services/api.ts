@@ -21,8 +21,8 @@ api.interceptors.response.use(
 );
 
 // ── Public ─────────────────────────────────────────────────────────────────
-export const fetchPublicEntries    = (): Promise<Entry[]>    => api.get('/entries/public').then(r => r.data);
-export const fetchPublicCategories = (): Promise<Category[]> => api.get('/categories/public').then(r => r.data);
+export const fetchPublicEntries    = (): Promise<Entry[]>    => api.get('/entries/public').then(r => Array.isArray(r.data) ? r.data : []);
+export const fetchPublicCategories = (): Promise<Category[]> => api.get('/categories/public').then(r => Array.isArray(r.data) ? r.data : []);
 
 // ── Admin: Entries ──────────────────────────────────────────────────────────
 export const fetchAdminEntries = (params?: Record<string, unknown>): Promise<PaginatedEntries> =>
@@ -36,7 +36,7 @@ export const bulkEntries = (body: { ids: string[]; action: string; status?: stri
   api.post('/entries/bulk', body).then(r => r.data);
 
 // ── Admin: Categories ───────────────────────────────────────────────────────
-export const fetchAdminCategories = (): Promise<Category[]> => api.get('/categories').then(r => r.data);
+export const fetchAdminCategories = (): Promise<Category[]> => api.get('/categories').then(r => Array.isArray(r.data) ? r.data : []);
 export const createCategory = (data: Partial<Category>): Promise<Category> => api.post('/categories', data).then(r => r.data);
 export const updateCategory = (id: string, data: Partial<Category>): Promise<Category> => api.put(`/categories/${id}`, data).then(r => r.data);
 export const deleteCategory = (id: string): Promise<void> => api.delete(`/categories/${id}`).then(r => r.data);
