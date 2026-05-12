@@ -6,7 +6,7 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node --project ../scripts/tsconfig.json ../scripts/seed.ts"
+    "seed": "NODE_PATH=./node_modules ts-node --project ../scripts/tsconfig.json ../scripts/seed.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
