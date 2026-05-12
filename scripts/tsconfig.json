@@ -1,7 +1,9 @@
 {
   "extends": "../server/tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".."
+    "rootDir": "..",
+ "types": ["node"],
+    "lib": ["ES2020", "DOM"]
   },
   "include": ["../scripts/**/*", "../server/src/**/*"]
 }
