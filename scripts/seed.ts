@@ -1,23 +1,1044 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import User from '../server/src/models/User';
+import Category from '../server/src/models/Category';
+import Entry from '../server/src/models/Entry';
+
+// ── Sample categories ────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { id: 'government',     label: 'Government',     color: '#3B82F6', icon: '🏛️', sortOrder: 1 },
+  { id: 'health',         label: 'Health',         color: '#EF4444', icon: '🏥', sortOrder: 2 },
+  { id: 'education',      label: 'Education',      color: '#F59E0B', icon: '🎓', sortOrder: 3 },
+  { id: 'infrastructure', label: 'Infrastructure', color: '#10B981', icon: '🏗️', sortOrder: 4 },
+];
+
+// ── Sample entries — 15 per state/territory (120 total) ─────────────────────
+
+const ENTRIES = [
+
+  // ── New South Wales ────────────────────────────────────────────────────────
+  {
+    title: 'NSW Parliament House',
+    categoryId: 'government', category: 'Government',
+    description: 'The seat of the Parliament of New South Wales, housing the Legislative Council and Legislative Assembly since 1829.',
+    location: '6 Macquarie St, Sydney NSW 2000',
+    coords: [-33.8693, 151.2140] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Sydney Town Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'The administrative centre of the City of Sydney Council, a Victorian-era sandstone landmark in the heart of the CBD.',
+    location: '483 George St, Sydney NSW 2000',
+    coords: [-33.8731, 151.2063] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Parramatta City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'Headquarters of the City of Parramatta, the second-largest CBD in NSW and a major administrative hub for western Sydney.',
+    location: '126 Church St, Parramatta NSW 2150',
+    coords: [-33.8136, 150.9997] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Newcastle City Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'The civic heart of Newcastle, housing the City of Newcastle council chambers and community event spaces.',
+    location: '290 King St, Newcastle NSW 2300',
+    coords: [-32.9269, 151.7789] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Prince Alfred Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A major teaching hospital in Camperdown and one of Australia\'s most comprehensive acute care facilities.',
+    location: 'Missenden Rd, Camperdown NSW 2050',
+    coords: [-33.8910, 151.1870] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Westmead Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The largest hospital in NSW by bed count, serving western Sydney across a wide range of specialties.',
+    location: 'Cnr Hawkesbury Rd & Darcy Rd, Westmead NSW 2145',
+    coords: [-33.8066, 150.9867] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'John Hunter Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The principal referral hospital for the Hunter New England region, providing trauma and specialist services.',
+    location: 'Lookout Rd, New Lambton Heights NSW 2305',
+    coords: [-32.9339, 151.7104] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Wollongong Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The major public hospital for the Illawarra region, offering emergency, surgical, and specialist services.',
+    location: 'Crown St, Wollongong NSW 2500',
+    coords: [-34.4248, 150.8939] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Sydney',
+    categoryId: 'education', category: 'Education',
+    description: 'Australia\'s first university, founded in 1850, consistently ranked among the world\'s top 100 institutions.',
+    location: 'Camperdown NSW 2006',
+    coords: [-33.8882, 151.1873] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'UNSW Sydney',
+    categoryId: 'education', category: 'Education',
+    description: 'A leading research university in Kensington, renowned for engineering, business, and law faculties.',
+    location: 'High St, Kensington NSW 2052',
+    coords: [-33.9173, 151.2313] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Newcastle',
+    categoryId: 'education', category: 'Education',
+    description: 'A regional research university ranked in the world\'s top 200, with strengths in medicine and engineering.',
+    location: 'University Dr, Callaghan NSW 2308',
+    coords: [-32.8994, 151.7069] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Western Sydney University',
+    categoryId: 'education', category: 'Education',
+    description: 'A multi-campus university serving Greater Western Sydney, with a focus on social equity and applied research.',
+    location: 'Locked Bag 1797, Penrith NSW 2751',
+    coords: [-33.7681, 150.7073] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Sydney Harbour Bridge',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'An iconic steel through-arch bridge crossing Sydney Harbour, completed in 1932 and still the world\'s widest long-span bridge.',
+    location: 'Sydney Harbour NSW 2060',
+    coords: [-33.8523, 151.2108] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port Botany Container Terminal',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'NSW\'s primary international container port, handling the majority of the state\'s sea freight.',
+    location: 'Foreshore Rd, Botany NSW 2019',
+    coords: [-33.9700, 151.1980] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Snowy Hydro Scheme',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'One of the world\'s most complex hydroelectric systems, spanning the Australian Alps and providing renewable energy to the grid.',
+    location: 'Snowy Mountains NSW 2627',
+    coords: [-36.3989, 148.3669] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Victoria ───────────────────────────────────────────────────────────────
+  {
+    title: 'Victorian Parliament House',
+    categoryId: 'government', category: 'Government',
+    description: 'Home to the Victorian Legislative Council and Legislative Assembly, a grand neoclassical building completed in stages from 1856.',
+    location: 'Spring St, Melbourne VIC 3002',
+    coords: [-37.8111, 144.9735] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Melbourne Town Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'The civic headquarters of the City of Melbourne, an ornate Victorian-era building at the corner of Swanston and Collins streets.',
+    location: '90-130 Swanston St, Melbourne VIC 3000',
+    coords: [-37.8143, 144.9661] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Geelong City Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'The civic centre of the City of Greater Geelong, Victoria\'s largest regional city and a key administrative hub.',
+    location: 'Little Malop St, Geelong VIC 3220',
+    coords: [-38.1480, 144.3612] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Ballarat Town Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'A heritage-listed public building at the heart of Ballarat\'s civic precinct, housing the City of Ballarat council.',
+    location: 'Sturt St, Ballarat VIC 3350',
+    coords: [-37.5623, 143.8555] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Melbourne Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'One of Australia\'s largest and most respected public hospitals, providing tertiary and quaternary care across Melbourne.',
+    location: '300 Grattan St, Parkville VIC 3052',
+    coords: [-37.7993, 144.9556] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'The Alfred Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Victoria\'s busiest trauma centre and a leading provider of specialist services including cardiothoracic and burns.',
+    location: '55 Commercial Rd, Melbourne VIC 3004',
+    coords: [-37.8466, 144.9817] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Children\'s Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Australia\'s leading specialist children\'s hospital, providing world-class paediatric care to families across Victoria.',
+    location: '50 Flemington Rd, Parkville VIC 3052',
+    coords: [-37.7944, 144.9483] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Monash Medical Centre',
+    categoryId: 'health', category: 'Health',
+    description: 'A major public hospital in Melbourne\'s south-east, providing a broad range of specialist and emergency services.',
+    location: '246 Clayton Rd, Clayton VIC 3168',
+    coords: [-37.9178, 145.1244] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Melbourne',
+    categoryId: 'education', category: 'Education',
+    description: 'Australia\'s second-oldest university and consistently ranked first in the country, known for research excellence.',
+    location: 'Parkville VIC 3010',
+    coords: [-37.7963, 144.9614] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Monash University',
+    categoryId: 'education', category: 'Education',
+    description: 'A large public research university with campuses across Melbourne\'s south-east, ranked in the world\'s top 100.',
+    location: 'Wellington Rd, Clayton VIC 3800',
+    coords: [-37.9109, 145.1340] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'RMIT University',
+    categoryId: 'education', category: 'Education',
+    description: 'A technology-focused university in Melbourne\'s CBD, known for design, engineering, and applied sciences.',
+    location: '124 La Trobe St, Melbourne VIC 3000',
+    coords: [-37.8083, 144.9627] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Deakin University Burwood',
+    categoryId: 'education', category: 'Education',
+    description: 'Deakin\'s main metropolitan campus in Melbourne\'s east, offering a wide range of undergraduate and postgraduate programs.',
+    location: '221 Burwood Hwy, Burwood VIC 3125',
+    coords: [-37.8472, 145.1145] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Melbourne Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Victoria\'s primary international airport and Australia\'s second busiest, handling over 37 million passengers annually pre-COVID.',
+    location: 'Melbourne Airport VIC 3045',
+    coords: [-37.6690, 144.8410] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Melbourne',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Australia\'s largest container and general cargo port, handling around a third of the nation\'s container trade.',
+    location: 'Footscray Rd, Port Melbourne VIC 3207',
+    coords: [-37.8246, 144.9239] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'West Gate Bridge',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'One of Australia\'s longest bridges, spanning the Yarra River and carrying the Western Ring Road across Port Phillip Bay.',
+    location: 'West Gate Bridge, Melbourne VIC 3011',
+    coords: [-37.8282, 144.8944] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Queensland ─────────────────────────────────────────────────────────────
+  {
+    title: 'Queensland Parliament House',
+    categoryId: 'government', category: 'Government',
+    description: 'Home of the Queensland Legislative Assembly, the oldest surviving public building in Brisbane, built in French Renaissance style.',
+    location: 'George St, Brisbane City QLD 4000',
+    coords: [-27.4705, 153.0237] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Brisbane City Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'A landmark civic building in King George Square housing Brisbane City Council, featuring a 92-metre clock tower.',
+    location: '64 Adelaide St, Brisbane City QLD 4000',
+    coords: [-27.4689, 153.0232] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Cairns Regional Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government authority for Cairns and surrounds, administering Far North Queensland\'s largest city.',
+    location: '119-145 Spence St, Cairns City QLD 4870',
+    coords: [-16.9226, 145.7712] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Townsville City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government for Townsville, Queensland\'s largest city outside the south-east corner and a key defence hub.',
+    location: '103 Walker St, Townsville City QLD 4810',
+    coords: [-19.2598, 146.8160] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Princess Alexandra Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Queensland\'s principal tertiary referral hospital, providing highly specialised services to patients across the state.',
+    location: 'Ipswich Rd, Woolloongabba QLD 4102',
+    coords: [-27.4969, 153.0337] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Brisbane and Women\'s Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Queensland\'s largest hospital by bed count, providing a full range of acute, specialist, and maternity services.',
+    location: 'Butterfield St, Herston QLD 4029',
+    coords: [-27.4497, 153.0246] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Cairns Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The primary referral hospital for Far North Queensland, serving a large and geographically dispersed population.',
+    location: '165 The Esplanade, Cairns City QLD 4870',
+    coords: [-16.9264, 145.7714] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Gold Coast University Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Queensland\'s newest tertiary hospital, opened in 2013 and serving the rapidly growing Gold Coast population.',
+    location: '1 Hospital Blvd, Southport QLD 4215',
+    coords: [-27.9836, 153.3793] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Queensland',
+    categoryId: 'education', category: 'Education',
+    description: 'One of Australia\'s leading research universities, with its main campus in St Lucia on a bend of the Brisbane River.',
+    location: 'St Lucia QLD 4072',
+    coords: [-27.4975, 153.0137] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Queensland University of Technology',
+    categoryId: 'education', category: 'Education',
+    description: 'A practice-oriented university in Brisbane\'s CBD, ranked highly for graduate employability and STEM programs.',
+    location: '2 George St, Brisbane City QLD 4000',
+    coords: [-27.4768, 153.0280] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'James Cook University',
+    categoryId: 'education', category: 'Education',
+    description: 'A tropical research university in Townsville and Cairns, specialising in marine science, environment, and health.',
+    location: '1 James Cook Dr, Douglas QLD 4814',
+    coords: [-19.3264, 146.7534] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Griffith University Nathan',
+    categoryId: 'education', category: 'Education',
+    description: 'A multi-campus Queensland university with strengths in criminology, music, and environmental science.',
+    location: 'Kessels Rd, Nathan QLD 4111',
+    coords: [-27.5536, 153.0364] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Brisbane Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Queensland\'s major international and domestic gateway, handling over 23 million passengers annually.',
+    location: 'Airport Dr, Brisbane Airport QLD 4008',
+    coords: [-27.3839, 153.1175] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Brisbane',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Queensland\'s largest multi-cargo port at Fisherman Islands, critical for the state\'s import and export trade.',
+    location: 'Fisherman Islands QLD 4178',
+    coords: [-27.3811, 153.1735] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Gateway Bridge',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'A pair of cantilever bridges over the Brisbane River on the Gateway Motorway, essential to the city\'s road network.',
+    location: 'Gateway Motorway, Brisbane QLD 4173',
+    coords: [-27.4458, 153.1102] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── South Australia ────────────────────────────────────────────────────────
+  {
+    title: 'Parliament House of South Australia',
+    categoryId: 'government', category: 'Government',
+    description: 'The seat of the South Australian Parliament on North Terrace, an impressive colonnaded building begun in 1875.',
+    location: 'North Terrace, Adelaide SA 5000',
+    coords: [-34.9244, 138.5990] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Adelaide City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government authority for the City of Adelaide, responsible for the CBD and North Adelaide.',
+    location: '25 Pirie St, Adelaide SA 5000',
+    coords: [-34.9262, 138.6038] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Mount Gambier City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government for South Australia\'s second-largest city, situated near the Victorian border.',
+    location: '10 Watson Terrace, Mount Gambier SA 5290',
+    coords: [-37.8291, 140.7823] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port Augusta City Hall',
+    categoryId: 'government', category: 'Government',
+    description: 'Civic headquarters for the City of Port Augusta, a strategic crossroads at the top of Spencer Gulf.',
+    location: '4 Mackay St, Port Augusta SA 5700',
+    coords: [-32.4930, 137.7680] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Adelaide Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'South Australia\'s largest hospital and a major trauma centre, opened in 2017 on North Terrace.',
+    location: 'Port Rd, Adelaide SA 5000',
+    coords: [-34.9216, 138.5870] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Flinders Medical Centre',
+    categoryId: 'health', category: 'Health',
+    description: 'A major public teaching hospital in Adelaide\'s southern suburbs, affiliated with Flinders University.',
+    location: 'Flinders Dr, Bedford Park SA 5042',
+    coords: [-35.0227, 138.5697] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Women\'s and Children\'s Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'South Australia\'s dedicated women\'s and paediatric hospital, located in North Adelaide.',
+    location: '72 King William Rd, North Adelaide SA 5006',
+    coords: [-34.9053, 138.6002] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Lyell McEwin Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A major public hospital serving the Elizabeth and northern Adelaide region.',
+    location: 'Haydown Rd, Elizabeth Vale SA 5112',
+    coords: [-34.7295, 138.6884] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Adelaide',
+    categoryId: 'education', category: 'Education',
+    description: 'South Australia\'s oldest university, founded in 1874 and renowned for wine, agriculture, and engineering research.',
+    location: 'North Terrace, Adelaide SA 5005',
+    coords: [-34.9204, 138.6010] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of South Australia',
+    categoryId: 'education', category: 'Education',
+    description: 'A practice-focused university in Adelaide, ranked highly for graduate employability and applied research.',
+    location: '101 Currie St, Adelaide SA 5000',
+    coords: [-34.9255, 138.5977] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Flinders University',
+    categoryId: 'education', category: 'Education',
+    description: 'A research-intensive university in Adelaide\'s south, with strengths in medicine, law, and social sciences.',
+    location: 'Sturt Rd, Bedford Park SA 5042',
+    coords: [-35.0173, 138.5686] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'TAFE SA Adelaide Campus',
+    categoryId: 'education', category: 'Education',
+    description: 'South Australia\'s largest vocational education provider, offering trade, technology, and business qualifications.',
+    location: '120 Currie St, Adelaide SA 5000',
+    coords: [-34.9267, 138.5984] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Adelaide Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'South Australia\'s main international and domestic airport, located close to the CBD at West Beach.',
+    location: '1 James Schofield Dr, Adelaide Airport SA 5950',
+    coords: [-34.9458, 138.5306] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Adelaide',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'South Australia\'s primary commercial port, handling bulk grain, containers, and petroleum products.',
+    location: '1 Commercial Rd, Port Adelaide SA 5015',
+    coords: [-34.8554, 138.5072] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'South Eastern Freeway',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'A major arterial road linking Adelaide with the Adelaide Hills and the South East, critical for freight movement.',
+    location: 'Glen Osmond Rd, Glen Osmond SA 5064',
+    coords: [-34.9598, 138.6400] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Western Australia ──────────────────────────────────────────────────────
+  {
+    title: 'Parliament House of Western Australia',
+    categoryId: 'government', category: 'Government',
+    description: 'The seat of the Western Australian Parliament on Harvest Terrace, Perth, opened in 1904.',
+    location: 'Harvest Terrace, Perth WA 6000',
+    coords: [-31.9555, 115.8565] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'City of Perth Council House',
+    categoryId: 'government', category: 'Government',
+    description: 'The administrative headquarters of the City of Perth, located on St Georges Terrace in the CBD.',
+    location: '27 St Georges Terrace, Perth WA 6000',
+    coords: [-31.9524, 115.8594] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'City of Fremantle',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government authority for Fremantle, a historic port city 19 km south-west of Perth.',
+    location: 'Kings Square, Fremantle WA 6160',
+    coords: [-32.0567, 115.7480] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'City of Rockingham Council',
+    categoryId: 'government', category: 'Government',
+    description: 'Local government for Rockingham, a fast-growing coastal city south of Perth with significant industrial activity.',
+    location: 'Civic Blvd, Rockingham WA 6168',
+    coords: [-32.2774, 115.7289] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Perth Children\'s Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Western Australia\'s dedicated paediatric hospital, serving children and families from across the state.',
+    location: '15 Hospital Ave, Nedlands WA 6009',
+    coords: [-31.9788, 115.8191] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Sir Charles Gairdner Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A major tertiary teaching hospital in Nedlands providing specialist care including neuroscience and cardiology.',
+    location: 'Hospital Ave, Nedlands WA 6009',
+    coords: [-31.9813, 115.8185] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Perth Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'WA\'s oldest public hospital, a major trauma and specialist centre in the heart of Perth\'s CBD.',
+    location: 'Wellington St, Perth WA 6000',
+    coords: [-31.9527, 115.8641] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Fiona Stanley Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'WA\'s largest hospital, opened in 2014 in Murdoch, providing a wide range of general and specialist services.',
+    location: '11 Robin Warren Dr, Murdoch WA 6150',
+    coords: [-32.0671, 115.8432] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Western Australia',
+    categoryId: 'education', category: 'Education',
+    description: 'Western Australia\'s oldest university, established in 1911 in Crawley on the banks of the Swan River.',
+    location: '35 Stirling Hwy, Crawley WA 6009',
+    coords: [-31.9798, 115.8175] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Curtin University',
+    categoryId: 'education', category: 'Education',
+    description: 'WA\'s largest university by enrolment, based in Bentley with strengths in mining, engineering, and business.',
+    location: 'Kent St, Bentley WA 6102',
+    coords: [-32.0064, 115.8945] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Murdoch University',
+    categoryId: 'education', category: 'Education',
+    description: 'A comprehensive university in Perth\'s south, known for veterinary science, law, and health programs.',
+    location: '90 South St, Murdoch WA 6150',
+    coords: [-32.0706, 115.8357] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Edith Cowan University',
+    categoryId: 'education', category: 'Education',
+    description: 'A teaching-focused university with campuses in Joondalup, Mount Lawley, and Bunbury, known for nursing and education.',
+    location: '270 Joondalup Dr, Joondalup WA 6027',
+    coords: [-31.7484, 115.7698] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Perth Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Western Australia\'s main international and domestic airport, an essential gateway for one of the world\'s most remote major cities.',
+    location: 'Airport Dr, Perth Airport WA 6105',
+    coords: [-31.9403, 115.9669] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Fremantle',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Australia\'s fourth-largest port and WA\'s primary container port, handling billions of dollars of trade annually.',
+    location: '1 Mews Rd, Fremantle WA 6160',
+    coords: [-32.0548, 115.7451] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Northbridge Tunnel',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'A road tunnel beneath Perth\'s CBD linking the Mitchell and Graham Farmer freeways, opened in 2000.',
+    location: 'Mitchell Freeway, Perth WA 6003',
+    coords: [-31.9450, 115.8534] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Tasmania ───────────────────────────────────────────────────────────────
+  {
+    title: 'Parliament House Tasmania',
+    categoryId: 'government', category: 'Government',
+    description: 'The seat of the Tasmanian Parliament on the Hobart waterfront, housing the Legislative Council and House of Assembly.',
+    location: '3 Murray St, Hobart TAS 7000',
+    coords: [-42.8836, 147.3281] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Hobart City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government authority for the City of Hobart, Australia\'s second-oldest capital city.',
+    location: '16 Elizabeth St, Hobart TAS 7000',
+    coords: [-42.8804, 147.3271] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Launceston City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government for Launceston, Tasmania\'s second-largest city at the head of the Tamar River.',
+    location: '18-28 St John St, Launceston TAS 7250',
+    coords: [-41.4305, 147.1406] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Devonport City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government for Devonport, the arrival point for the Spirit of Tasmania ferry from Melbourne.',
+    location: '44-48 Best St, Devonport TAS 7310',
+    coords: [-41.1778, 146.3487] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Hobart Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'Tasmania\'s principal public teaching hospital and largest health facility, providing statewide specialist services.',
+    location: '48 Liverpool St, Hobart TAS 7000',
+    coords: [-42.8833, 147.3255] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Launceston General Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The major hospital for northern Tasmania, providing surgical, emergency, and specialist services.',
+    location: '274-280 Charles St, Launceston TAS 7250',
+    coords: [-41.4281, 147.1321] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'North West Regional Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The primary hospital for north-west Tasmania, serving Burnie and surrounding communities.',
+    location: 'Brickport Rd, Burnie TAS 7320',
+    coords: [-41.0549, 145.9022] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Calvary St Luke\'s Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A private hospital in Launceston operated by Calvary Health Care, offering a range of surgical and medical services.',
+    location: '12 Frederick St, Launceston TAS 7250',
+    coords: [-41.4286, 147.1341] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Tasmania',
+    categoryId: 'education', category: 'Education',
+    description: 'Australia\'s fourth-oldest university, founded in 1890, with campuses in Hobart, Launceston, and Burnie.',
+    location: 'Churchill Ave, Sandy Bay TAS 7005',
+    coords: [-42.9016, 147.3275] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'UTAS Launceston Campus',
+    categoryId: 'education', category: 'Education',
+    description: 'The University of Tasmania\'s northern campus in Newnham, offering programs across health, IT, and social sciences.',
+    location: 'Newnham Dr, Newnham TAS 7248',
+    coords: [-41.4094, 147.1468] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'TasTAFE Hobart',
+    categoryId: 'education', category: 'Education',
+    description: 'Tasmania\'s main vocational education and training provider, delivering trade and professional qualifications statewide.',
+    location: '20 Campbell St, Hobart TAS 7000',
+    coords: [-42.8825, 147.3240] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Rosny College',
+    categoryId: 'education', category: 'Education',
+    description: 'One of Tasmania\'s senior secondary colleges, providing Years 11 and 12 education on Hobart\'s eastern shore.',
+    location: 'Bligh St, Rosny Park TAS 7018',
+    coords: [-42.8700, 147.3700] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Hobart International Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Tasmania\'s primary airport, located in Cambridge east of Hobart, handling domestic and international flights.',
+    location: 'Strachan St, Cambridge TAS 7170',
+    coords: [-42.8361, 147.5102] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Burnie',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Tasmania\'s busiest freight port by volume, handling bulk goods and operating as a key export gateway for the north.',
+    location: 'Marine Terrace, Burnie TAS 7320',
+    coords: [-41.0547, 145.9046] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Bridgewater Bridge',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'A major causeway and bridge over the Derwent River north of Hobart, carrying the Midland Highway, currently under replacement.',
+    location: 'Bridgewater TAS 7030',
+    coords: [-42.7386, 147.2311] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Northern Territory ─────────────────────────────────────────────────────
+  {
+    title: 'Northern Territory Parliament House',
+    categoryId: 'government', category: 'Government',
+    description: 'The seat of the Northern Territory Legislative Assembly in Darwin, opened in 1994 on Mitchell Street.',
+    location: 'Mitchell St, Darwin City NT 0800',
+    coords: [-12.4634, 130.8456] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Darwin City Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government authority for Darwin, Australia\'s northernmost capital city and gateway to South-East Asia.',
+    location: '17 Harry Chan Ave, Darwin City NT 0800',
+    coords: [-12.4621, 130.8429] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Alice Springs Town Council',
+    categoryId: 'government', category: 'Government',
+    description: 'The local government for Alice Springs, the remote desert hub at the geographic heart of Australia.',
+    location: '93 Todd St, Alice Springs NT 0870',
+    coords: [-23.6980, 133.8807] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Katherine Town Council',
+    categoryId: 'government', category: 'Government',
+    description: 'Local government for Katherine, a strategic town on the Stuart Highway and an important service centre for the region.',
+    location: '1st St, Katherine NT 0850',
+    coords: [-14.4652, 132.2641] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Royal Darwin Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The NT\'s principal hospital and only tertiary care facility, providing specialist services to the Top End.',
+    location: 'Rocklands Dr, Tiwi NT 0810',
+    coords: [-12.3783, 130.8651] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Alice Springs Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The major hospital for Central Australia, serving Alice Springs and the surrounding desert communities.',
+    location: 'Gap Rd, Alice Springs NT 0870',
+    coords: [-23.7113, 133.8817] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Katherine Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A regional hospital serving Katherine and surrounding communities, providing emergency and general services.',
+    location: 'Gorge Rd, Katherine NT 0850',
+    coords: [-14.4676, 132.2577] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Palmerston Regional Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The NT\'s newest hospital, opened in 2018 in Palmerston, serving Darwin\'s rapidly growing southern suburbs.',
+    location: '1 Hargrave Rd, Palmerston NT 0830',
+    coords: [-12.4840, 130.9780] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Charles Darwin University',
+    categoryId: 'education', category: 'Education',
+    description: 'The NT\'s only university, providing higher education and VET programs from Darwin\'s Casuarina campus.',
+    location: 'Ellengowan Dr, Casuarina NT 0810',
+    coords: [-12.3757, 130.8633] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Batchelor Institute',
+    categoryId: 'education', category: 'Education',
+    description: 'A dual-sector institute specialising in Indigenous Australian higher education and vocational training.',
+    location: 'Batchelor NT 0845',
+    coords: [-13.0509, 131.0301] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'CDU Alice Springs Campus',
+    categoryId: 'education', category: 'Education',
+    description: 'Charles Darwin University\'s regional campus providing tertiary and vocational education to Central Australia.',
+    location: 'Grevillea Ct, Alice Springs NT 0870',
+    coords: [-23.7087, 133.8879] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Casuarina Senior College',
+    categoryId: 'education', category: 'Education',
+    description: 'Darwin\'s largest senior secondary college, offering the NT Certificate of Education and Training.',
+    location: 'Trower Rd, Casuarina NT 0810',
+    coords: [-12.3784, 130.8618] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Darwin International Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'The NT\'s main airport in Marrara, serving both civil aviation and the RAAF Base Darwin, Australia\'s strategic northern gateway.',
+    location: 'Henry Wrigley Dr, Marrara NT 0812',
+    coords: [-12.4147, 130.8726] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Port of Darwin',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Australia\'s northernmost deepwater port, a strategic trade hub leased to a Chinese company in 2015 and central to the NT\'s export economy.',
+    location: 'Stokes Hill Rd, Darwin City NT 0800',
+    coords: [-12.4673, 130.8484] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'East Arm Wharf',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'Darwin\'s main commercial wharf facility for bulk cargo, livestock export, and the Tiwi Islands ferry service.',
+    location: 'East Arm Rd, Darwin NT 0828',
+    coords: [-12.4873, 130.8784] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+
+  // ── Australian Capital Territory ───────────────────────────────────────────
+  {
+    title: 'Australian Parliament House',
+    categoryId: 'government', category: 'Government',
+    description: 'The meeting place of the Parliament of Australia, opened in 1988 on Capital Hill and home to the Senate and House of Representatives.',
+    location: 'Capital Hill, Canberra ACT 2600',
+    coords: [-35.3081, 149.1244] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'ACT Legislative Assembly',
+    categoryId: 'government', category: 'Government',
+    description: 'The unicameral parliament of the Australian Capital Territory, located in the civic heart of Canberra.',
+    location: '18 London Circuit, Canberra ACT 2601',
+    coords: [-35.2833, 149.1286] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Australian War Memorial',
+    categoryId: 'government', category: 'Government',
+    description: 'A national monument and museum commemorating Australians who have served in war, aligned with Parliament House along ANZAC Parade.',
+    location: 'Treloar Crescent, Campbell ACT 2612',
+    coords: [-35.2803, 149.1502] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'National Archives of Australia',
+    categoryId: 'government', category: 'Government',
+    description: 'The custodian of Australia\'s federal government records, preserving and providing access to the documentary heritage of the nation.',
+    location: 'Queen Victoria Terrace, Parkes ACT 2600',
+    coords: [-35.2981, 149.1327] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Canberra Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'The ACT\'s principal public hospital in Garran, providing a full range of acute, specialist, and emergency services.',
+    location: 'Yamba Dr, Garran ACT 2605',
+    coords: [-35.3473, 149.1046] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Calvary Public Hospital Bruce',
+    categoryId: 'health', category: 'Health',
+    description: 'A public hospital in Bruce operated by Calvary Health Care, serving Canberra\'s north with emergency and specialist care.',
+    location: '4 Mary Potter Circuit, Bruce ACT 2617',
+    coords: [-35.2356, 149.0830] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'John James Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A private acute care hospital in Deakin providing surgical, medical, and specialist services to the Canberra community.',
+    location: '173 Strickland Crescent, Deakin ACT 2600',
+    coords: [-35.3247, 149.0987] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'National Capital Private Hospital',
+    categoryId: 'health', category: 'Health',
+    description: 'A private hospital adjacent to Canberra Hospital in Garran, offering surgical and rehabilitation services.',
+    location: '7 Gilmore Place, Garran ACT 2605',
+    coords: [-35.3482, 149.1021] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Australian National University',
+    categoryId: 'education', category: 'Education',
+    description: 'Australia\'s national research university in Acton, consistently ranked in the world\'s top 30 institutions.',
+    location: 'Acton ACT 2601',
+    coords: [-35.2777, 149.1185] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'University of Canberra',
+    categoryId: 'education', category: 'Education',
+    description: 'A practice-oriented university in Bruce with strengths in health, education, and communication.',
+    location: '11 Kirinari St, Bruce ACT 2617',
+    coords: [-35.2430, 149.0889] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Australian Catholic University Canberra',
+    categoryId: 'education', category: 'Education',
+    description: 'ACU\'s Canberra campus in Watson, offering programs in nursing, education, and social work.',
+    location: '223 Antill St, Watson ACT 2602',
+    coords: [-35.2395, 149.1525] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Canberra Institute of Technology',
+    categoryId: 'education', category: 'Education',
+    description: 'The ACT\'s main TAFE provider, offering trade, technology, and business qualifications from multiple campuses.',
+    location: 'Reid Campus, Constitution Ave, Reid ACT 2601',
+    coords: [-35.2762, 149.1411] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Canberra Airport',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'The ACT\'s only airport, providing direct domestic flights and limited international connections from Pialligo.',
+    location: '33 Terminal Circuit, Pialligo ACT 2609',
+    coords: [-35.3072, 149.1951] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Tidbinbilla Deep Space Station',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'A NASA and CSIRO deep space communications facility in the Tidbinbilla Nature Reserve, tracking spacecraft across the solar system.',
+    location: 'Tidbinbilla Rd, Tidbinbilla ACT 2903',
+    coords: [-35.4003, 148.9806] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+  {
+    title: 'Scrivener Dam',
+    categoryId: 'infrastructure', category: 'Infrastructure',
+    description: 'The dam that creates Lake Burley Griffin, a central feature of Canberra\'s landscape designed by Walter Burley Griffin.',
+    location: 'Scrivener Dam, Lake Burley Griffin ACT 2601',
+    coords: [-35.2963, 149.0658] as [number, number],
+    image: null, status: 'publish' as const,
+  },
+];
+
+// ── Seed function ─────────────────────────────────────────────────────────────
 
 async function seed() {
-  const uri = process.env.MONGO_URI ?? 'mongodb://localhost:27017/boundary_map';
+  const uri   = process.env.MONGO_URI ?? 'mongodb://localhost:27017/boundary_map';
+  const force = process.argv.includes('--force') || process.env.FORCE_SEED === 'true';
   await mongoose.connect(uri);
 
-  const exists = await User.exists({});
-  if (exists) {
-    console.log('Admin user already exists — skipping seed.');
-    await mongoose.disconnect();
-    return;
+  if (force) {
+    await Promise.all([Category.deleteMany({}), Entry.deleteMany({})]);
+    console.log('--force: cleared existing categories and entries.');
   }
 
-  const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'changeme123';
+  // Admin user
+  const userExists = await User.exists({});
+  if (userExists) {
+    console.log('Admin user already exists — skipping user seed.');
+  } else {
+    const email    = process.env.SEED_ADMIN_EMAIL    ?? 'admin@example.com';
+    const password = process.env.SEED_ADMIN_PASSWORD ?? 'changeme123';
+    await User.create({ email, password, role: 'admin' });
+    console.log(`Admin user created: ${email}`);
+  }
 
-  await User.create({ email, password, role: 'admin' });
-  console.log(`Admin user created: ${email}`);
+  // Categories
+  const catExists = await Category.exists({});
+  if (catExists) {
+    console.log('Categories already exist — skipping category seed.');
+  } else {
+    await Category.insertMany(CATEGORIES);
+    console.log(`${CATEGORIES.length} categories created.`);
+  }
+
+  // Entries
+  const entryExists = await Entry.exists({});
+  if (entryExists) {
+    console.log('Entries already exist — skipping entry seed.');
+  } else {
+    await Entry.insertMany(ENTRIES);
+    console.log(`${ENTRIES.length} entries created.`);
+  }
+
+  console.log('\nSeed complete. Start the app and log in at /admin');
+  console.log(`  Email:    ${process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com'}`);
+  console.log(`  Password: ${process.env.SEED_ADMIN_PASSWORD ?? 'changeme123'}`);
+
   await mongoose.disconnect();
 }
 

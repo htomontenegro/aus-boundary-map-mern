@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import Fuse from 'fuse.js';
 import { Link } from 'react-router-dom';
 
@@ -16,14 +16,26 @@ import GeographySelector from '../components/map/GeographySelector';
 import SidebarPanel     from '../components/map/SidebarPanel';
 import LegendBox        from '../components/map/LegendBox';
 
-// Inner component so useMap() works inside MapContainer
-function MapLayers({ entries, categoriesById, boundaryUrl }: {
+function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  const prev = useRef<[number, number] | null>(null);
+  useEffect(() => {
+    if (prev.current && prev.current[0] === center[0] && prev.current[1] === center[1]) return;
+    prev.current = center;
+    map.flyTo(center, zoom, { duration: 1.2 });
+  }, [center, zoom, map]);
+  return null;
+}
+
+function MapLayers({ entries, categoriesById, boundaryUrl, mapConfig }: {
   entries: Entry[];
   categoriesById: Record<string, Category>;
   boundaryUrl: string | null;
+  mapConfig: { center: [number, number]; zoom: number };
 }) {
   return (
     <>
+      <MapFlyTo center={mapConfig.center} zoom={mapConfig.zoom} />
       <BoundaryLayer url={boundaryUrl} />
       <EntryMarkers entries={entries} categoriesById={categoriesById} />
     </>
@@ -39,6 +51,7 @@ export default function PublicMapPage() {
   const [visible, setVisible]         = useState<Entry[]>([]);
   const [error, setError]             = useState('');
   const [tileLayerId, setTileLayerId] = useState(DEFAULT_TILE_LAYER_ID);
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const fuseRef                       = useRef<Fuse<Entry> | null>(null);
   const geo                           = useGeography();
 
@@ -84,12 +97,19 @@ export default function PublicMapPage() {
     setVisible(result);
   }, [entries, activeCat, search]);
 
+  const flyTarget = selectedEntry?.coords
+    ? { center: selectedEntry.coords as [number, number], zoom: 15 }
+    : geo.mapConfig;
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <SidebarPanel
         entries={visible}
         categoriesById={categoriesById}
+        selectedEntryId={selectedEntry?.id}
+        onEntryClick={e => setSelectedEntry(e)}
+        onBack={() => setSelectedEntry(null)}
       />
 
       {/* Map area */}
@@ -115,8 +135,8 @@ export default function PublicMapPage() {
 
         {/* Leaflet map */}
         <MapContainer
-          center={[-25.2744, 133.7751]}
-          zoom={5}
+          center={geo.mapConfig.center}
+          zoom={geo.mapConfig.zoom}
           scrollWheelZoom={true}
           className="h-full w-full"
         >
@@ -129,6 +149,7 @@ export default function PublicMapPage() {
             entries={visible}
             categoriesById={categoriesById}
             boundaryUrl={geo.boundaryUrl}
+            mapConfig={flyTarget}
           />
         </MapContainer>
 
