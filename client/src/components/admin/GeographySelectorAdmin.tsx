@@ -5,11 +5,24 @@ interface Props {
 }
 
 export default function GeographySelectorAdmin({ geo }: Props) {
-  const { config, selection, setSelection, activeScope, activeArea } = geo;
+  const { config, selection, setSelection, setCountry, activeCountry, activeScope, activeArea } = geo;
   if (!config) return <p className="text-sm text-gray-400">Loading geography config…</p>;
 
   return (
     <div className="space-y-3">
+      <div>
+        <label className="label">Country</label>
+        <select
+          value={selection.country}
+          onChange={e => setCountry(e.target.value)}
+          className="input"
+        >
+          {config.countries.map(c => (
+            <option key={c.id} value={c.id}>{c.flag} {c.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div>
         <label className="label">Scope</label>
         <select
@@ -17,7 +30,7 @@ export default function GeographySelectorAdmin({ geo }: Props) {
           onChange={e => setSelection({ ...selection, scope: e.target.value, area: '', subdivision: '' })}
           className="input"
         >
-          {config.scopes.map(s => (
+          {activeCountry?.scopes.map(s => (
             <option key={s.id} value={s.id}>{s.label}</option>
           ))}
         </select>

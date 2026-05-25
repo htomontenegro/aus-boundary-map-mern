@@ -35,10 +35,22 @@ export interface GeographyScope extends GeographyNode {
   itemLabel: string;
 }
 
-export interface GeographyConfig {
+export interface GeographyCountry {
+  id: string;
+  label: string;
+  displayName: string;
+  flag: string;
+  center: [number, number];
+  zoom: number;
   defaultScopeId: string;
-  country: GeographyNode;
+  geojsonUrl?: string;
+  color: string;
   scopes: GeographyScope[];
+}
+
+export interface GeographyConfig {
+  defaultCountryId: string;
+  countries: GeographyCountry[];
 }
 
 export interface GeographySelection {

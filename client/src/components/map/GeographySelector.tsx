@@ -5,18 +5,29 @@ interface Props {
 }
 
 export default function GeographySelector({ geo }: Props) {
-  const { config, selection, setSelection, activeScope, activeArea } = geo;
+  const { config, selection, setSelection, setCountry, activeCountry, activeScope, activeArea } = geo;
   if (!config) return null;
 
   return (
     <div className="absolute bottom-8 left-3 z-[1000] bg-white/90 backdrop-blur-sm border border-gray-200 shadow-md rounded-lg p-3 flex flex-col gap-2 min-w-[180px]">
+      {/* Country */}
+      <select
+        value={selection.country}
+        onChange={e => setCountry(e.target.value)}
+        className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+      >
+        {config.countries.map(c => (
+          <option key={c.id} value={c.id}>{c.flag} {c.label}</option>
+        ))}
+      </select>
+
       {/* Scope */}
       <select
         value={selection.scope}
         onChange={e => setSelection({ ...selection, scope: e.target.value, area: '', subdivision: '' })}
         className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
       >
-        {config.scopes.map(s => (
+        {activeCountry?.scopes.map(s => (
           <option key={s.id} value={s.id}>{s.label}</option>
         ))}
       </select>
