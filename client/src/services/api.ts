@@ -14,7 +14,16 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401 && localStorage.getItem('bm_token')) {
       localStorage.removeItem('bm_token');
-      window.location.href = '/admin/login';
+      const url: string = err.config?.url ?? '';
+      const isSessionCheck = url.includes('/auth/me');
+      const onAdminPage =
+        window.location.pathname.startsWith('/admin') &&
+        !window.location.pathname.startsWith('/admin/login');
+      // Let AuthContext handle expired tokens on public pages; only hard-redirect
+      // when an admin API call fails while the user is on an admin screen.
+      if (!isSessionCheck && onAdminPage) {
+        window.location.href = '/admin/login';
+      }
     }
     return Promise.reject(err);
   }
